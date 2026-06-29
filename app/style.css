@@ -1,0 +1,81 @@
+.banner{
+    background-image: url("/banner.jpeg");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+}
+
+/* Hero decorative clip-path shapes */
+.hero-shape-1 {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    background: linear-gradient(135deg, rgba(196, 163, 90, 0.35), rgba(196, 163, 90, 0.08));
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    top: 10%;
+    right: 6%;
+    z-index: 2;
+    pointer-events: none;
+    animation: floatSlow 8s ease-in-out infinite;
+}
+
+.hero-shape-2 {
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    bottom: 18%;
+    left: 4%;
+    z-index: 2;
+    pointer-events: none;
+    animation: floatSlow 10s ease-in-out infinite reverse;
+}
+
+.hero-shape-3 {
+    position: absolute;
+    width: 140px;
+    height: 140px;
+    background: rgba(196, 163, 90, 0.2);
+    clip-path: polygon(20% 0%, 80% 0%, 100% 20%, 100% 80%, 80% 100%, 20% 100%, 0% 80%, 0% 20%);
+    top: 58%;
+    right: 22%;
+    z-index: 2;
+    pointer-events: none;
+    animation: floatSlow 7s ease-in-out infinite;
+}
+
+.hero-shape-4 {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    background: rgba(196, 163, 90, 0.18);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    top: 22%;
+    left: 12%;
+    z-index: 2;
+    pointer-events: none;
+    animation: floatSlow 9s ease-in-out infinite reverse;
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(3deg); }
+}
+
+/* Smooth wave/rope divider at hero bottom */
+.hero-curve-divider {
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+    line-height: 0;
+    z-index: 10;
+}
+
+.hero-curve-divider svg {
+    display: block;
+    width: 100%;
+    height: clamp(40px, 6vw, 80px);
+}
