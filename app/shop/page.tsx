@@ -1,16 +1,30 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Search, SlidersHorizontal, Grid3X3, List, ChevronDown, ShoppingCart } from "lucide-react";
+import { Search, SlidersHorizontal, Grid3X3, List, ChevronDown, ShoppingCart, Heart } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useSearchParams } from "next/navigation";
 import NextLink from "next/link";
-import type { Product } from "@/types";
 
-import { products } from "@/lib/products";
-const allProducts: Product[] = products;
+interface ShopProduct {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  image: string;
+  price: number;
+  categoryId: string | null;
+  category: { id: string; name: string; slug: string } | null;
+  badge: string | null;
+  stockQty: number;
+  ingredients: string[];
+  howToUse: string[];
+  keyBenefits: string[];
+  size: string;
+  hairType: string[];
+}
 
-const categories = ["All", "Shampoo", "Conditioner", "Treatments", "Styling"];
 const sortOptions = ["Newest", "Price: Low to High", "Price: High to Low", "Best Selling"];
 
 function ShopContent() {
@@ -18,27 +32,58 @@ function ShopContent() {
   const categoryParam = searchParams.get("category");
   const [selectedCategory, setSelectedCategory] = useState(categoryParam || "All");
   const [sortBy, setSortBy] = useState("Newest");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [allProducts, setAllProducts] = useState<ShopProduct[]>([]);
+  const [categories, setCategories] = useState<{ name: string; slug: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const { addItem } = useCart();
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          fetch("/api/products"),
+          fetch("/api/admin/categories"),
+        ]);
+
+        if (prodRes.ok) {
+          const data = await prodRes.json();
+          setAllProducts(data.products || []);
+        }
+
+        if (catRes.ok) {
+          const data = await catRes.json();
+          setCategories(data.categories?.map((c: any) => ({ name: c.name, slug: c.slug })) || []);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, []);
 
   // Sync category from URL on mount
   useEffect(() => {
-    if (categoryParam && categories.includes(categoryParam)) {
+    if (categoryParam && categories.some((c) => c.name === categoryParam)) {
       setSelectedCategory(categoryParam);
     }
-  }, [categoryParam]);
+  }, [categoryParam, categories]);
 
   const filtered = allProducts
-    .filter((p) => selectedCategory === "All" || p.category === selectedCategory)
+    .filter((p) => selectedCategory === "All" || p.category?.name === selectedCategory)
     .filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1])
     .sort((a, b) => {
       if (sortBy === "Price: Low to High") return a.price - b.price;
       if (sortBy === "Price: High to Low") return b.price - a.price;
-      if (sortBy === "Best Selling") return (a.badge === "Bestseller" ? -1 : 1);
+      if (sortBy === "Best Selling") return a.badge === "Bestseller" ? -1 : 1;
       return 0;
     });
+
+  const categoryNames = ["All", ...categories.map((c) => c.name)];
 
   return (
     <div className="min-h-screen bg-white">
@@ -58,7 +103,7 @@ function ShopContent() {
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-10">
           <p className="text-sm uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold mb-2">The Collection</p>
           <h1 className="text-3xl md:text-4xl font-header text-[#1a120b]">Shop All Products</h1>
-          <p className="text-[#6a5a4a] font-body mt-2">{filtered.length} products</p>
+          <p className="text-[#6a5a4a] font-body mt-2">{loading ? "Loading..." : `${filtered.length} products`}</p>
         </div>
       </div>
 
@@ -68,12 +113,11 @@ function ShopContent() {
           {/* ─── Sidebar Filters (Desktop) ─── */}
           <aside className="hidden lg:block w-64 shrink-0">
             <div className="sticky top-28 space-y-8">
-
               {/* Categories */}
               <div>
                 <h3 className="font-header font-bold text-[#1a120b] text-sm uppercase tracking-wider mb-4">Category</h3>
                 <ul className="space-y-2">
-                  {categories.map((cat) => (
+                  {categoryNames.map((cat) => (
                     <li key={cat}>
                       <button
                         onClick={() => setSelectedCategory(cat)}
@@ -97,7 +141,7 @@ function ShopContent() {
                   <input
                     type="range"
                     min={0}
-                    max={100}
+                    max={200}
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                     className="w-full accent-[#533a00]"
@@ -106,21 +150,6 @@ function ShopContent() {
                     <span>${priceRange[0]}</span>
                     <span>${priceRange[1]}</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Badge filters */}
-              <div>
-                <h3 className="font-header font-bold text-[#1a120b] text-sm uppercase tracking-wider mb-4">Tags</h3>
-                <div className="flex flex-wrap gap-2">
-                  {["Bestseller", "New"].map((tag) => (
-                    <button
-                      key={tag}
-                      className="px-3 py-1.5 text-xs font-body border border-[#e8dfd3] text-[#6a5a4a] hover:border-[#533a00] hover:text-[#533a00] transition-colors"
-                    >
-                      {tag}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>
@@ -158,7 +187,7 @@ function ShopContent() {
               <div>
                 <h3 className="font-header font-bold text-[#1a120b] text-sm uppercase tracking-wider mb-3">Category</h3>
                 <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
+                  {categoryNames.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
@@ -178,7 +207,7 @@ function ShopContent() {
                 <input
                   type="range"
                   min={0}
-                  max={100}
+                  max={200}
                   value={priceRange[1]}
                   onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                   className="w-full accent-[#533a00]"
@@ -221,11 +250,15 @@ function ShopContent() {
             </div>
 
             {/* Products */}
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-20">
+                <div className="w-8 h-8 border-2 border-[#533a00] border-t-transparent rounded-full animate-spin mx-auto" />
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="text-center py-20">
                 <p className="text-[#6a5a4a] font-body text-lg">No products match your filters.</p>
                 <button
-                  onClick={() => { setSelectedCategory("All"); setPriceRange([0, 100]); }}
+                  onClick={() => { setSelectedCategory("All"); setPriceRange([0, 200]); }}
                   className="mt-4 text-[#533a00] underline font-body text-sm"
                 >
                   Clear all filters
@@ -238,21 +271,21 @@ function ShopContent() {
                   : "flex flex-col gap-6"
               }>
                 {filtered.map((product) => (
-                  <div key={product.name} className="group">
+                  <div key={product.id} className="group">
                     {viewMode === "grid" ? (
                       <>
                         <NextLink href={`/shop/${product.slug}`} className="block">
                           <div className="aspect-[3/4] overflow-hidden bg-[#f5f0eb] mb-4 relative">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                          />
-                          {product.badge && (
-                            <span className="absolute top-3 left-3 bg-[#533a00] text-white text-[10px] uppercase tracking-wider px-2.5 py-1 font-semibold">
-                              {product.badge}
-                            </span>
-                          )}
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                            />
+                            {product.badge && (
+                              <span className="absolute top-3 left-3 bg-[#533a00] text-white text-[10px] uppercase tracking-wider px-2.5 py-1 font-semibold">
+                                {product.badge}
+                              </span>
+                            )}
                           </div>
                         </NextLink>
                         <NextLink href={`/shop/${product.slug}`} className="block">
@@ -284,7 +317,7 @@ function ShopContent() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 addItem({
-                                  id: product.name,
+                                  id: product.id,
                                   name: product.name,
                                   image: product.image,
                                   price: product.price,

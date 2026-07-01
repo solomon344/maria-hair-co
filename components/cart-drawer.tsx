@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useCart } from "@/context/cart-context";
-import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
+import { X, Minus, Plus, Trash2, ShoppingBag, Copy, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
@@ -9,6 +10,9 @@ export function CartDrawer() {
   const { items, isOpen, closeCart, subtotal, itemCount, removeItem, updateQuantity } = useCart();
   const router = useRouter();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -34,6 +38,38 @@ export function CartDrawer() {
   const handleCheckout = () => {
     closeCart();
     router.push("/checkout");
+  };
+
+  const handleShare = async () => {
+    setError(null);
+    setShareUrl(null);
+    setCopied(false);
+    try {
+      const res = await fetch("/api/cart/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong.");
+        return;
+      }
+      setShareUrl(data.url);
+    } catch {
+      setError("Something went wrong. Please try again.");
+    }
+  };
+
+  const copyToClipboard = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // ignore
+    }
   };
 
   return (
@@ -158,11 +194,32 @@ export function CartDrawer() {
                 Checkout &mdash; ${subtotal.toFixed(2)}
               </button>
               <button
+                onClick={handleShare}
+                className="w-full py-3 border border-[#533a00] text-[#533a00] text-xs uppercase tracking-wider font-semibold hover:bg-[#533a00] hover:text-white transition-colors flex items-center justify-center gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                Share My Cart
+              </button>
+              <button
                 onClick={closeCart}
                 className="w-full text-center text-[#6a5a4a] text-sm font-body hover:text-[#533a00] transition-colors"
               >
                 Continue Shopping
               </button>
+
+              {shareUrl && (
+                <div className="p-3 bg-[#faf7f2] border border-[#e8dfd3] flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    className="flex-1 bg-transparent text-xs text-[#1a120b] outline-none"
+                  />
+                  <button onClick={copyToClipboard} className="text-[#533a00] text-xs font-semibold flex items-center gap-1">
+                    {copied ? <><Check className="w-3.5 h-3.5" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+                  </button>
+                </div>
+              )}
+              {error && <p className="text-xs text-red-500 font-body">{error}</p>}
             </div>
           </>
         )}

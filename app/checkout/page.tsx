@@ -1,14 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Minus, Plus, Trash2, Shield, Truck, CreditCard } from "lucide-react";
 
 export default function CheckoutPage() {
-  const { items, subtotal, removeItem, updateQuantity, clearCart } = useCart();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const sharedToken = searchParams.get("shared");
+  const { items, subtotal, removeItem, updateQuantity, clearCart, addItem } = useCart();
   const [step, setStep] = useState<"info" | "shipping" | "payment">("info");
+  const [loadingShared, setLoadingShared] = useState(false);
+
+  // Load shared cart if token present and cart is empty
+  useEffect(() => {
+    const loadShared = async () => {
+      if (!sharedToken || items.length > 0) return;
+      setLoadingShared(true);
+      try {
+        const res = await fetch(`/api/cart/share/${sharedToken}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.items) {
+          data.items.forEach((item: any) => addItem(item));
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoadingShared(false);
+      }
+    };
+    loadShared();
+  }, [sharedToken, items.length, addItem]);
 
   const shipping = subtotal >= 50 ? 0 : 5.99;
   const tax = subtotal * 0.08;
@@ -30,8 +55,13 @@ export default function CheckoutPage() {
           <span className="text-[#533a00] font-body text-sm font-semibold">Checkout</span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        {loadingShared && (
+          <div className="mb-6 p-3 text-sm bg-[#faf7f2] border border-[#e8dfd3] text-[#533a00]">
+            Loading shared cart...
+          </div>
+        )}
 
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
           {/* ─── Left: Checkout Form ─── */}
           <div className="lg:col-span-3">
             {/* Step indicators */}

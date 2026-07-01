@@ -1,29 +1,157 @@
-import { notFound } from "next/navigation";
-import NextLink from "next/link";
-import { ChevronLeft, Star, ShoppingCart, Check, Leaf, FlaskConical } from "lucide-react";
-import { getProductBySlug, getRelatedProducts, products } from "@/lib/products";
+"use client";
+
+import { useState, useEffect } from "react";
+import { notFound, useRouter, useParams } from "next/navigation";
+import { ChevronLeft, Star, ShoppingCart, Check, Leaf, FlaskConical, Heart } from "lucide-react";
 import { Reveal } from "@/components/reveal";
 import { useCart } from "@/context/cart-context";
+import { useSession } from "next-auth/react";
 
-// Generate static params for all products
-export function generateStaticParams() {
-  return products.map((product) => ({
-    slug: product.slug,
-  }));
+interface ShopProduct {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string;
+  description: string;
+  image: string;
+  price: number;
+  categoryId: string | null;
+  category: { id: string; name: string; slug: string } | null;
+  badge: string | null;
+  stockQty: number;
+  ingredients: string[];
+  howToUse: string[];
+  keyBenefits: string[];
+  size: string;
+  hairType: string[];
 }
 
-export default function ProductPage({ params }: { params: { slug: string } }) {
-  const product = getProductBySlug(params.slug);
+export default function ProductPage() {
+  const params = useParams();
+  const slug = params.slug as string;
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const { items: cartItems, addItem, updateQuantity, removeItem } = useCart();
+  const [product, setProduct] = useState<ShopProduct | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<ShopProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
+  const [inWishlist, setInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
-  if (!product) {
-    notFound();
+  const isInCart = cartItems.some((item) => item.id === product?.id);
+  const currentCartItem = cartItems.find((item) => item.id === product?.id);
+
+  // Sync local quantity with cart when the item is already in cart
+  useEffect(() => {
+    if (currentCartItem && product) {
+      setQuantity(currentCartItem.quantity);
+    }
+  }, [currentCartItem, product]);
+
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        const res = await fetch(`/api/products?slug=${slug}`);
+        if (!res.ok) {
+          setProduct(null);
+          return;
+        }
+        const data = await res.json();
+        setProduct(data.product);
+
+        const allRes = await fetch("/api/products");
+        if (allRes.ok) {
+          const allData = await allRes.json();
+          setRelatedProducts(
+            (allData.products || []).filter((p: any) => p.slug !== slug).slice(0, 4)
+          );
+        }
+      } catch {
+        setProduct(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (slug) loadProduct();
+  }, [slug]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !product) return;
+    const checkWishlist = async () => {
+      try {
+        const res = await fetch("/api/profile/wishlist");
+        if (res.ok) {
+          const data = await res.json();
+          setInWishlist(data.items?.some((i: any) => i.productId === product.id) || false);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    checkWishlist();
+  }, [session, product]);
+
+  const toggleWishlist = async () => {
+    if (status === 'unauthenticated') {
+      router.push("/login");
+      return;
+    }
+    if (!product) return;
+
+    setWishlistLoading(true);
+    try {
+      const res = await fetch("/api/profile/wishlist", {
+        method: inWishlist ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id }),
+      });
+      if (res.ok) {
+        setInWishlist(!inWishlist);
+      } else {
+        const data = await res.json();
+        console.error("Wishlist error:", data);
+        alert(data.error || "Failed to update wishlist");
+      }
+    } catch {
+      alert("Something went wrong");
+    } finally {
+      setWishlistLoading(false);
+    }
+  };
+
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    if (isInCart && currentCartItem) {
+      updateQuantity(product.id, quantity);
+    } else {
+      addItem({
+        id: product.id,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        quantity,
+        tagline: product.tagline,
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#533a00] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
-  const relatedProducts = getRelatedProducts(params.slug, 4);
+  if (!product) {
+    return notFound();
+  }
 
   return (
     <div className="min-h-screen bg-white">
-      {/* ─── Breadcrumb ─── */}
+      {/* Breadcrumb */}
       <div className="bg-white border-b border-[#e8dfd3]">
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-3">
           <nav className="flex items-center gap-2 text-xs font-body text-[#8a7a6a]">
@@ -36,7 +164,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
         </div>
       </div>
 
-      {/* ─── Product Detail ─── */}
+      {/* Product Detail */}
       <div className="max-w-7xl mx-auto px-6 md:px-8 py-10 md:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
 
@@ -61,7 +189,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
             <Reveal direction="left">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold mb-2">
-                  {product.category}
+                  {product.category?.name || "Product"}
                 </p>
                 <h1 className="text-3xl md:text-4xl font-header text-[#1a120b] leading-tight">
                   {product.name}
@@ -83,7 +211,9 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                   <span className="text-3xl font-header font-bold text-[#533a00]">
                     ${product.price.toFixed(2)}
                   </span>
-                  <span className="text-sm text-[#8a7a6a] font-body ml-2">{product.size}</span>
+                  {product.size && (
+                    <span className="text-sm text-[#8a7a6a] font-body ml-2">{product.size}</span>
+                  )}
                 </div>
 
                 {/* Key Benefits */}
@@ -96,16 +226,54 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
                   ))}
                 </div>
 
-                {/* Quantity + Add to Cart */}
+                {/* Quantity + Add to Cart + Wishlist */}
                 <div className="mt-8 flex items-center gap-4">
                   <div className="flex items-center border border-[#e8dfd3]">
-                    <button className="px-4 py-3 text-[#6a5a4a] hover:text-[#1a120b] transition-colors font-body">-</button>
-                    <span className="px-4 py-3 text-sm font-body text-[#1a120b] border-x border-[#e8dfd3]">1</span>
-                    <button className="px-4 py-3 text-[#6a5a4a] hover:text-[#1a120b] transition-colors font-body">+</button>
+                        <button
+                          onClick={() => {
+                            if (quantity <= 1) return;
+                            const newQty = quantity - 1;
+                            setQuantity(newQty);
+                            if (isInCart && product) {
+                              updateQuantity(product.id, newQty);
+                            }
+                          }}
+                          className="px-4 py-3 text-[#6a5a4a] hover:text-[#1a120b] transition-colors font-body"
+                        >
+                          -
+                        </button>
+                        <span className="px-4 py-3 text-sm font-body text-[#1a120b] border-x border-[#e8dfd3]">{quantity}</span>
+                        <button
+                          onClick={() => {
+                            const newQty = quantity + 1;
+                            setQuantity(newQty);
+                            if (isInCart && product) {
+                              updateQuantity(product.id, newQty);
+                            }
+                          }}
+                          className="px-4 py-3 text-[#6a5a4a] hover:text-[#1a120b] transition-colors font-body"
+                        >
+                          +
+                        </button>
                   </div>
-                  <button className="flex-1 px-6 py-3.5 bg-[#533a00] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#3d2b1f] transition-colors flex items-center justify-center gap-2">
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex-1 px-6 py-3.5 bg-[#533a00] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#3d2b1f] transition-colors flex items-center justify-center gap-2"
+                  >
                     <ShoppingCart className="w-4 h-4" />
-                    Add to Cart
+                    {isInCart ? "Update Cart" : "Add to Cart"}
+                  </button>
+                  <button
+                    onClick={toggleWishlist}
+                    disabled={wishlistLoading}
+                    className={`p-3.5 border transition-colors ${
+                      inWishlist
+                        ? "border-red-200 bg-red-50 text-red-500"
+                        : "border-[#e8dfd3] text-[#6a5a4a] hover:text-red-400"
+                    }`}
+                    title={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                  >
+                    <Heart className={`w-5 h-5 ${inWishlist ? "fill-red-500" : ""}`} />
                   </button>
                 </div>
 
@@ -174,7 +342,7 @@ export default function ProductPage({ params }: { params: { slug: string } }) {
         </div>
       </div>
 
-      {/* ─── Related Products ─── */}
+      {/* Related Products */}
       {relatedProducts.length > 0 && (
         <div className="bg-[#faf7f2] border-t border-[#e8dfd3]">
           <div className="max-w-7xl mx-auto px-6 md:px-8 py-16">

@@ -10,12 +10,14 @@ import { Logo } from "./logo";
 import { ShoppingBag, UserIcon, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/context/cart-context";
+import { useSession, signOut } from "next-auth/react";
 
 
 export const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname()
   const { openCart, itemCount } = useCart();
+  const { data: session } = useSession();
 
   const routed = [
     {
@@ -90,9 +92,23 @@ export const Navbar = () => {
           "flex items-center gap-3 md:gap-4",
           isLanding ? "text-white" : "text-[#1a120b]"
         )}>
-          <NextLink href="/login" className="hover:opacity-70 transition-opacity inline-flex">
-            <UserIcon className="w-5 h-5" />
-          </NextLink>
+          {session ? (
+            <>
+              <NextLink href="/profile" className="hover:opacity-70 transition-opacity inline-flex">
+                <UserIcon className="w-5 h-5" />
+              </NextLink>
+              <button
+                onClick={() => signOut()}
+                className="text-xs font-body font-semibold hover:opacity-70 transition-opacity"
+              >
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <NextLink href="/login" className="hover:opacity-70 transition-opacity inline-flex">
+              <UserIcon className="w-5 h-5" />
+            </NextLink>
+          )}
           <button onClick={openCart} className="relative p-1 hover:opacity-70 transition-opacity">
             <ShoppingBag className="w-5 h-5" />
             {itemCount > 0 && (
@@ -148,20 +164,31 @@ export const Navbar = () => {
             {/* Mobile Account links */}
             <div className="p-4 border-t border-[#e8dfd3] mt-4">
               <p className="px-4 text-xs uppercase tracking-wider text-[#8a7a6a] font-body font-semibold mb-3">Account</p>
-              <NextLink
-                href="/login"
-                onClick={closeMobileMenu}
-                className="block px-4 py-3 text-sm font-body text-[#6a5a4a] hover:text-[#533a00] hover:bg-[#faf7f2] transition-colors"
-              >
-                Sign In / Register
-              </NextLink>
-              <NextLink
-                href="/profile"
-                onClick={closeMobileMenu}
-                className="block px-4 py-3 text-sm font-body text-[#6a5a4a] hover:text-[#533a00] hover:bg-[#faf7f2] transition-colors"
-              >
-                My Account
-              </NextLink>
+              {session ? (
+                <>
+                  <NextLink
+                    href="/profile"
+                    onClick={closeMobileMenu}
+                    className="block px-4 py-3 text-sm font-body text-[#6a5a4a] hover:text-[#533a00] hover:bg-[#faf7f2] transition-colors"
+                  >
+                    My Account
+                  </NextLink>
+                  <button
+                    onClick={() => { signOut(); closeMobileMenu(); }}
+                    className="block w-full text-left px-4 py-3 text-sm font-body text-[#6a5a4a] hover:text-[#533a00] hover:bg-[#faf7f2] transition-colors"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <NextLink
+                  href="/login"
+                  onClick={closeMobileMenu}
+                  className="block px-4 py-3 text-sm font-body text-[#6a5a4a] hover:text-[#533a00] hover:bg-[#faf7f2] transition-colors"
+                >
+                  Sign In / Register
+                </NextLink>
+              )}
             </div>
           </div>
         </div>
