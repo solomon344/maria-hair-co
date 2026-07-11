@@ -3,11 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const shared = await prisma.sharedCart.findUnique({
-      where: { token: params.token },
+      where: { token: (await params).token },
     });
 
     if (!shared || shared.expiresAt < new Date()) {

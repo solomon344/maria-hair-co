@@ -50,7 +50,9 @@ function ShopContent() {
 
         if (prodRes.ok) {
           const data = await prodRes.json();
+          console.log("Fetched products:", data.products);
           setAllProducts(data.products || []);
+          setPriceRange([0, data.products.reduce((max: number, p: ShopProduct) => Math.max(max, p.price), 200)]);
         }
 
         if (catRes.ok) {
@@ -103,7 +105,7 @@ function ShopContent() {
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-10">
           <p className="text-sm uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold mb-2">The Collection</p>
           <h1 className="text-3xl md:text-4xl font-header text-[#1a120b]">Shop All Products</h1>
-          <p className="text-[#6a5a4a] font-body mt-2">{loading ? "Loading..." : `${filtered.length} products`}</p>
+          <p className="text-[#6a5a4a] font-body mt-2">{loading ? "Loading..." : `D{filtered.length} products`}</p>
         </div>
       </div>
 
@@ -141,14 +143,14 @@ function ShopContent() {
                   <input
                     type="range"
                     min={0}
-                    max={200}
+                    max={allProducts.reduce((max, p) => Math.max(max, p.price), 200)}
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([priceRange[0], Number(e.target.value)])}
                     className="w-full accent-[#533a00]"
                   />
                   <div className="flex items-center justify-between text-sm text-[#6a5a4a] font-body">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
+                    <span>D{priceRange[0]}</span>
+                    <span>D{priceRange[1]}</span>
                   </div>
                 </div>
               </div>
@@ -168,13 +170,13 @@ function ShopContent() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-1.5 ${viewMode === "grid" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
+                className={`p-1.5 D{viewMode === "grid" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-1.5 ${viewMode === "list" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
+                className={`p-1.5 D{viewMode === "list" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -191,7 +193,7 @@ function ShopContent() {
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-4 py-2 text-sm font-body transition-colors ${
+                      className={`px-4 py-2 text-sm font-body transition-colors D{
                         selectedCategory === cat
                           ? "bg-[#533a00] text-white"
                           : "bg-white text-[#6a5a4a] border border-[#e8dfd3]"
@@ -203,7 +205,7 @@ function ShopContent() {
                 </div>
               </div>
               <div>
-                <h3 className="font-header font-bold text-[#1a120b] text-sm uppercase tracking-wider mb-3">Max Price: ${priceRange[1]}</h3>
+                <h3 className="font-header font-bold text-[#1a120b] text-sm uppercase tracking-wider mb-3">Max Price: D{priceRange[1]}</h3>
                 <input
                   type="range"
                   min={0}
@@ -223,13 +225,13 @@ function ShopContent() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-1.5 ${viewMode === "grid" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
+                  className={`p-1.5 D{viewMode === "grid" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-1.5 ${viewMode === "list" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
+                  className={`p-1.5 D{viewMode === "list" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
                 >
                   <List className="w-4 h-4" />
                 </button>
@@ -274,7 +276,7 @@ function ShopContent() {
                   <div key={product.id} className="group">
                     {viewMode === "grid" ? (
                       <>
-                        <NextLink href={`/shop/${product.slug}`} className="block">
+                        <NextLink href={`/shop/D{product.slug}`} className="block">
                           <div className="aspect-[3/4] overflow-hidden bg-[#f5f0eb] mb-4 relative">
                             <img
                               src={product.image}
@@ -288,14 +290,14 @@ function ShopContent() {
                             )}
                           </div>
                         </NextLink>
-                        <NextLink href={`/shop/${product.slug}`} className="block">
+                        <NextLink href={`/shop/D{product.slug}`} className="block">
                           <h3 className="font-header font-bold text-[#1a120b] text-sm md:text-lg group-hover:text-[#533a00] transition-colors">{product.name}</h3>
                           <p className="text-[#6a5a4a] text-xs md:text-sm font-body mt-0.5">{product.tagline}</p>
-                          <p className="text-[#533a00] font-semibold mt-1.5 text-sm md:text-base">${product.price.toFixed(2)}</p>
+                          <p className="text-[#533a00] font-semibold mt-1.5 text-sm md:text-base">D{product.price.toFixed(2)}</p>
                         </NextLink>
                       </>
                     ) : (
-                      <NextLink href={`/shop/${product.slug}`} className="block">
+                      <NextLink href={`/shop/D{product.slug}`} className="block">
                         <div className="flex gap-6 bg-[#faf7f2] p-4 group">
                           <div className="w-32 h-40 shrink-0 overflow-hidden bg-[#f5f0eb]">
                             <img
@@ -312,7 +314,7 @@ function ShopContent() {
                             )}
                             <h3 className="font-header font-bold text-[#1a120b] text-lg">{product.name}</h3>
                             <p className="text-[#6a5a4a] font-body text-sm mt-1">{product.tagline}</p>
-                            <p className="text-[#533a00] font-semibold mt-2">${product.price.toFixed(2)}</p>
+                            <p className="text-[#533a00] font-semibold mt-2">D{product.price.toFixed(2)}</p>
                             <button
                               onClick={(e) => {
                                 e.preventDefault();

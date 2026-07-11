@@ -14,6 +14,7 @@ export interface CartItem {
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  isSharedCart: boolean;
 }
 
 type CartAction =
@@ -24,11 +25,13 @@ type CartAction =
   | { type: "OPEN_CART" }
   | { type: "CLOSE_CART" }
   | { type: "CLEAR_CART" }
-  | { type: "LOAD_CART"; payload: CartItem[] };
+  | { type: "LOAD_CART"; payload: CartItem[] }
+  | { type: "SET_SHARED_CART"; payload: boolean };
 
 interface CartContextValue {
   items: CartItem[];
   isOpen: boolean;
+  isSharedCart: boolean;
   itemCount: number;
   subtotal: number;
   addItem: (item: CartItem) => void;
@@ -38,6 +41,8 @@ interface CartContextValue {
   openCart: () => void;
   closeCart: () => void;
   clearCart: () => void;
+  loadCart: (items: CartItem[]) => void;
+  setSharedCart: (isShared: boolean) => void;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -72,16 +77,18 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case "CLOSE_CART":
       return { ...state, isOpen: false };
     case "CLEAR_CART":
-      return { ...state, items: [] };
+      return { ...state, items: [], isSharedCart: false };
     case "LOAD_CART":
       return { ...state, items: action.payload };
+    case "SET_SHARED_CART":
+      return { ...state, isSharedCart: action.payload };
     default:
       return state;
   }
 }
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, { items: [], isOpen: false });
+  const [state, dispatch] = useReducer(cartReducer, { items: [], isOpen: false, isSharedCart: false });
 
   // Hydrate cart from localStorage on mount
   useEffect(() => {
@@ -89,8 +96,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem("mariea-cart");
       if (stored) {
         const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          dispatch({ type: "LOAD_CART", payload: parsed });
+        if (parsed.items && Array.isArray(parsed.items)) {
+          dispatch({ type: "LOAD_CART", payload: parsed.items });
+          if (typeof parsed.isSharedCart === "boolean") {
+            dispatch({ type: "SET_SHARED_CART", payload: parsed.isSharedCart });
+          }
         }
       }
     } catch {
@@ -98,10 +108,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Persist to localStorage whenever items change
+  // Persist to localStorage whenever items or isSharedCart change
   useEffect(() => {
-    localStorage.setItem("mariea-cart", JSON.stringify(state.items));
-  }, [state.items]);
+    localStorage.setItem("mariea-cart", JSON.stringify({
+      items: state.items,
+      isSharedCart: state.isSharedCart,
+    }));
+  }, [state.items, state.isSharedCart]);
 
   const addItem = (item: CartItem) => {
     dispatch({ type: "ADD_ITEM", payload: item });
@@ -115,6 +128,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const openCart = () => dispatch({ type: "OPEN_CART" });
   const closeCart = () => dispatch({ type: "CLOSE_CART" });
   const clearCart = () => dispatch({ type: "CLEAR_CART" });
+  const loadCart = (items: CartItem[]) => dispatch({ type: "LOAD_CART", payload: items });
+  const setSharedCart = (isShared: boolean) => dispatch({ type: "SET_SHARED_CART", payload: isShared });
 
   const itemCount = state.items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = state.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
@@ -124,6 +139,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items: state.items,
         isOpen: state.isOpen,
+        isSharedCart: state.isSharedCart,
         itemCount,
         subtotal,
         addItem,
@@ -133,6 +149,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         openCart,
         closeCart,
         clearCart,
+        loadCart,
+        setSharedCart,
       }}
     >
       {children}

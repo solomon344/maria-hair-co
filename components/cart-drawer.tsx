@@ -3,16 +3,21 @@
 import { useState } from "react";
 import { useCart } from "@/context/cart-context";
 import { X, Minus, Plus, Trash2, ShoppingBag, Copy, Check } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 export function CartDrawer() {
-  const { items, isOpen, closeCart, subtotal, itemCount, removeItem, updateQuantity } = useCart();
+  const { items, isOpen, closeCart, subtotal, itemCount, removeItem, updateQuantity, isSharedCart } = useCart();
   const router = useRouter();
+  const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if we're on a shared cart page
+  const isSharedCartPage = pathname.startsWith("/cart/share");
+  const shouldHideShareButton = isSharedCart || isSharedCartPage;
 
   // Close on Escape
   useEffect(() => {
@@ -109,7 +114,7 @@ export function CartDrawer() {
             <ShoppingBag className="w-12 h-12 text-[#e8dfd3] mb-4" />
             <p className="text-[#6a5a4a] font-body text-lg mb-1">Your cart is empty</p>
             <p className="text-[#8a7a6a] font-body text-sm mb-6">
-              Looks like you haven&rsquo;t added anything yet.
+              Looks like you haven't added anything yet.
             </p>
             <button
               onClick={() => { closeCart(); router.push("/shop"); }}
@@ -179,7 +184,7 @@ export function CartDrawer() {
             {/* Footer */}
             <div className="border-t border-[#e8dfd3] px-6 py-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="font-body text-[#6a5a4a] text-sm">Subtotal</span>
+                <span className="font-body text-sm text-[#6a5a4a]">Subtotal</span>
                 <span className="font-header font-bold text-[#1a120b] text-lg">
                   ${subtotal.toFixed(2)}
                 </span>
@@ -191,15 +196,17 @@ export function CartDrawer() {
                 onClick={handleCheckout}
                 className="w-full py-3.5 bg-[#533a00] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#3d2b1f] transition-colors"
               >
-                Checkout &mdash; ${subtotal.toFixed(2)}
+                Checkout — ${subtotal.toFixed(2)}
               </button>
-              <button
-                onClick={handleShare}
-                className="w-full py-3 border border-[#533a00] text-[#533a00] text-xs uppercase tracking-wider font-semibold hover:bg-[#533a00] hover:text-white transition-colors flex items-center justify-center gap-2"
-              >
-                <Copy className="w-4 h-4" />
-                Share My Cart
-              </button>
+              {!shouldHideShareButton && (
+                <button
+                  onClick={handleShare}
+                  className="w-full py-3 border border-[#533a00] text-[#533a00] text-xs uppercase tracking-wider font-semibold hover:bg-[#533a00] hover:text-white transition-colors flex items-center justify-center gap-2"
+                >
+                  <Copy className="w-4 h-4" />
+                  Share My Cart
+                </button>
+              )}
               <button
                 onClick={closeCart}
                 className="w-full text-center text-[#6a5a4a] text-sm font-body hover:text-[#533a00] transition-colors"

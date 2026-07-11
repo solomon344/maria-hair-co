@@ -7,6 +7,7 @@ import { ShoppingBag, Users, Mail, Printer, ArrowLeft, Send, Box, Plus, Trash2, 
 import { useEdgeStore } from "@/lib/edgestore";
 
 type AdminTab = "orders" | "users" | "products" | "categories" | "email";
+type EmailTemplate = "hair-tips" | "general" | "new-products";
 
 interface ProductForm {
   id?: string;
@@ -45,11 +46,12 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [emailTab, setEmailTab] = useState<"compose" | "templates">("compose");
-  const [emailTemplate, setEmailTemplate] = useState<"hair-tips" | "general">("general");
+  const [emailTemplate, setEmailTemplate] = useState<EmailTemplate>("general");
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [notifying, setNotifying] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductForm | null>(null);
   const [savingProduct, setSavingProduct] = useState(false);
@@ -182,6 +184,30 @@ export default function AdminPage() {
       alert("Something went wrong");
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleNotifyNewProducts = async () => {
+    setNotifying(true);
+    try {
+      const res = await fetch("/api/admin/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          template: "new-products",
+          recipients: "all",
+        }),
+      });
+
+      if (res.ok) {
+        alert("New products notification sent to all users!");
+      } else {
+        alert("Failed to send notification");
+      }
+    } catch {
+      alert("Something went wrong");
+    } finally {
+      setNotifying(false);
     }
   };
 
@@ -466,6 +492,19 @@ Thank you for being part of the Mariéa family!
 Best regards,
 The Mariéa Hair Co. Team`,
     },
+    "new-products": {
+      subject: "New Products Just Dropped! ✨",
+      body: `Hi {name},
+
+Exciting news! We've just added some amazing new products to our collection:
+
+{products}
+
+Shop them now at [link]
+
+Best regards,
+The Mariéa Hair Co. Team`,
+    },
   };
 
   return (
@@ -590,32 +629,42 @@ The Mariéa Hair Co. Team`,
           <div>
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-header font-bold text-[#1a120b]">Products</h2>
-              <button
-                onClick={() => {
-                  setEditingProduct({
-                    slug: "",
-                    name: "",
-                    tagline: "",
-                    description: "",
-                    image: "",
-                    price: "",
-                    categoryId: "",
-                    badge: "",
-                    stockQty: "0",
-                    size: "",
-                    ingredients: [],
-                    howToUse: [],
-                    keyBenefits: [],
-                    hairType: [],
-                  });
-                  setImagePreview("");
-                  setShowProductForm(true);
-                }}
-                className="flex items-center gap-2 px-4 py-2 bg-[#533a00] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#3d2b1f] transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Add Product
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleNotifyNewProducts}
+                  disabled={notifying || products.length === 0}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#533a00] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#3d2b1f] transition-colors disabled:opacity-70"
+                >
+                  <Mail className="w-4 h-4" />
+                  {notifying ? "Notifying..." : "Notify users of new products"}
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingProduct({
+                      slug: "",
+                      name: "",
+                      tagline: "",
+                      description: "",
+                      image: "",
+                      price: "",
+                      categoryId: "",
+                      badge: "",
+                      stockQty: "0",
+                      size: "",
+                      ingredients: [],
+                      howToUse: [],
+                      keyBenefits: [],
+                      hairType: [],
+                    });
+                    setImagePreview("");
+                    setShowProductForm(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#533a00] text-white text-xs uppercase tracking-wider font-semibold hover:bg-[#3d2b1f] transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Product
+                </button>
+              </div>
             </div>
 
             {showProductForm && (
@@ -950,59 +999,61 @@ The Mariéa Hair Co. Team`,
             )}
 
             {!showProductForm && (
-              loading ? (
-                <p className="text-sm text-[#6a5a4a]">Loading products...</p>
-              ) : products.length === 0 ? (
-                <p className="text-sm text-[#6a5a4a]">No products found.</p>
-              ) : (
-                <div className="border border-[#e8dfd3] overflow-hidden">
-                  <table className="w-full">
-                    <thead className="bg-[#faf7f2]">
-                      <tr>
-                        <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Image</th>
-                        <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Name</th>
-                        <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Category</th>
-                        <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Price</th>
-                        <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Stock</th>
-                        <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#e8dfd3]">
-                      {products.map((product: any) => (
-                        <tr key={product.id} className="hover:bg-[#faf7f2] transition-colors">
-                          <td className="px-6 py-4">
-                            {product.image && (
-                              <img src={product.image} alt={product.name} className="w-16 h-16 object-cover border border-[#e8dfd3]" />
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-body text-[#1a120b]">{product.name}</td>
-                          <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">
-                            {product.category?.name || "N/A"}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">${Number(product.price).toFixed(2)}</td>
-                          <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">{product.stockQty}</td>
-                          <td className="px-6 py-4 text-sm font-body">
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => handleEditProduct(product)}
-                                className="text-[#533a00] hover:underline"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="text-red-500 hover:underline"
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </td>
+              <div>
+                {loading ? (
+                  <p className="text-sm text-[#6a5a4a]">Loading products...</p>
+                ) : products.length === 0 ? (
+                  <p className="text-sm text-[#6a5a4a]">No products found.</p>
+                ) : (
+                  <div className="border border-[#e8dfd3] overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-[#faf7f2]">
+                        <tr>
+                          <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Image</th>
+                          <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Name</th>
+                          <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Category</th>
+                          <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Price</th>
+                          <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Stock</th>
+                          <th className="text-left px-6 py-3 text-xs font-body font-semibold text-[#6a5a4a] uppercase tracking-wider">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )
+                      </thead>
+                      <tbody className="divide-y divide-[#e8dfd3]">
+                        {products.map((product: any) => (
+                          <tr key={product.id} className="hover:bg-[#faf7f2] transition-colors">
+                            <td className="px-6 py-4">
+                              {product.image && (
+                                <img src={product.image} alt={product.name} className="w-16 h-16 object-cover border border-[#e8dfd3]" />
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-body text-[#1a120b]">{product.name}</td>
+                            <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">
+                              {product.category?.name || "N/A"}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">${Number(product.price).toFixed(2)}</td>
+                            <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">{product.stockQty}</td>
+                            <td className="px-6 py-4 text-sm font-body">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => handleEditProduct(product)}
+                                  className="text-[#533a00] hover:underline"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                  className="text-red-500 hover:underline"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}

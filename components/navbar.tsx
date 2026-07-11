@@ -19,6 +19,9 @@ export const Navbar = () => {
   const { openCart, itemCount } = useCart();
   const { data: session } = useSession();
 
+  // Check if we're on a shared cart page
+  const isSharedCartPage = pathname.startsWith("/cart/share");
+
   const routed = [
     {
       name:"Shop All",
@@ -109,14 +112,16 @@ export const Navbar = () => {
               <UserIcon className="w-5 h-5" />
             </NextLink>
           )}
-          <button onClick={openCart} className="relative p-1 hover:opacity-70 transition-opacity">
-            <ShoppingBag className="w-5 h-5" />
-            {itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#c4a35a] text-[#1a120b] text-[10px] font-bold flex items-center justify-center rounded-full">
-                {itemCount > 9 ? "9+" : itemCount}
-              </span>
-            )}
-          </button>
+          {!isSharedCartPage && (
+            <button onClick={openCart} className="relative p-1 hover:opacity-70 transition-opacity">
+              <ShoppingBag className="w-5 h-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#c4a35a] text-[#1a120b] text-[10px] font-bold flex items-center justify-center rounded-full">
+                  {itemCount > 9 ? "9+" : itemCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
       </nav>
