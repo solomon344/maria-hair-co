@@ -2,7 +2,12 @@ import { Calendar, Clock, ArrowLeft } from "lucide-react";
 import { notFound } from "next/navigation";
 import NextLink from "next/link";
 import { BlogContent } from "@/components/blog-content";
+import type { Metadata } from "next";
 import { getBlogPostBySlug, getRelatedPosts, blogPosts } from "@/lib/blog-data";
+import { JsonLd } from "@/components/json-ld";
+import { absoluteUrl, siteConfig } from "@/config/site";
+
+type Props = { params: Promise<{ slug: string }> };
 
 // Generate static params for all blog posts
 export function generateStaticParams() {
@@ -11,17 +16,79 @@ export function generateStaticParams() {
   }));
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = getBlogPostBySlug(params.slug);
+// Only the posts above exist; anything else is a 404.
+export const dynamicParams = false;
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const post = getBlogPostBySlug((await params).slug);
+  if (!post) return { title: "Article not found", robots: { index: false } };
+
+  const path = `/haircare/${post.slug}`;
+  return {
+    title: post.title,
+    description: post.excerpt,
+    keywords: post.tags,
+    authors: [{ name: post.author }],
+    alternates: { canonical: path },
+    openGraph: {
+      type: "article",
+      url: path,
+      title: post.title,
+      description: post.excerpt,
+      publishedTime: new Date(post.publishedAt).toISOString(),
+      authors: [post.author],
+      section: post.category,
+      tags: post.tags,
+      images: [{ url: absoluteUrl(post.coverImage), alt: post.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [absoluteUrl(post.coverImage)],
+    },
+  };
+}
+
+export default async function BlogPostPage({ params }: Props) {
+  const { slug } = await params;
+  const post = getBlogPostBySlug(slug);
 
   if (!post) {
     notFound();
   }
 
-  const relatedPosts = getRelatedPosts(params.slug, 2);
+  const relatedPosts = getRelatedPosts(slug, 2);
+
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        headline: post.title,
+        description: post.excerpt,
+        image: [absoluteUrl(post.coverImage)],
+        datePublished: new Date(post.publishedAt).toISOString(),
+        author: { "@type": "Organization", name: post.author },
+        publisher: { "@id": `${siteConfig.url}/#organization` },
+        mainEntityOfPage: absoluteUrl(`/haircare/${post.slug}`),
+        keywords: post.tags.join(", "),
+        articleSection: post.category,
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: absoluteUrl("/") },
+          { "@type": "ListItem", position: 2, name: "Hair Care", item: absoluteUrl("/haircare") },
+          { "@type": "ListItem", position: 3, name: post.title, item: absoluteUrl(`/haircare/${post.slug}`) },
+        ],
+      },
+    ],
+  };
 
   return (
     <div className="min-h-screen bg-white">
+      <JsonLd data={articleJsonLd} />
       {/* ─── Breadcrumb ─── */}
       <div className="bg-white border-b border-[#e8dfd3]">
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-3">

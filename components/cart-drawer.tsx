@@ -173,7 +173,7 @@ export function CartDrawer() {
                         </button>
                       </div>
                       <p className="font-header font-bold text-[#533a00] text-sm">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        D{(item.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -186,7 +186,7 @@ export function CartDrawer() {
               <div className="flex items-center justify-between">
                 <span className="font-body text-sm text-[#6a5a4a]">Subtotal</span>
                 <span className="font-header font-bold text-[#1a120b] text-lg">
-                  ${subtotal.toFixed(2)}
+                  D{subtotal.toFixed(2)}
                 </span>
               </div>
               <p className="text-[#8a7a6a] text-xs font-body">

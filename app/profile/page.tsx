@@ -318,7 +318,7 @@ export default function ProfilePage() {
                     <span>{order.items?.length || 0} items</span>
                   </div>
                   <div className="flex items-center gap-4">
-                    <span className="font-header font-bold text-[#533a00]">${Number(order.total).toFixed(2)}</span>
+                    <span className="font-header font-bold text-[#533a00]">D{Number(order.total).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -374,7 +374,7 @@ export default function ProfilePage() {
                     <p className="text-[#8a7a6a] text-xs font-body mt-0.5">{item.product?.tagline || item.tagline}</p>
                   </div>
                   <div className="flex items-center justify-between mt-3">
-                    <span className="font-header font-bold text-[#533a00]">${Number(item.product?.price || item.price).toFixed(2)}</span>
+                    <span className="font-header font-bold text-[#533a00]">D{Number(item.product?.price || item.price).toFixed(2)}</span>
                   </div>
                 </div>
               </div>

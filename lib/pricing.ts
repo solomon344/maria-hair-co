@@ -5,6 +5,9 @@ export const FREE_SHIPPING_THRESHOLD = 50;
 export const SHIPPING_FEE = 5.99;
 export const TAX_RATE = 0.08;
 
+/** Prices are in Gambian dalasi, matching what ModemPay charges. */
+export const formatPrice = (amount: number) => `D${amount.toFixed(2)}`;
+
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function calculateTotals(subtotal: number) {

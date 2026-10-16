@@ -5,7 +5,6 @@ import { Button, Kbd, Link, TextField, InputGroup } from "@heroui/react";
 import NextLink from "next/link";
 import clsx from "clsx";
 
-import { siteConfig } from "@/config/site";
 import { Logo } from "./logo";
 import { ShoppingBag, UserIcon, Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";

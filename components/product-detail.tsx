@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { notFound, useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, Star, ShoppingCart, Check, Leaf, FlaskConical, Heart } from "lucide-react";
 import { Reveal } from "@/components/reveal";
 import { useCart } from "@/context/cart-context";
 import { useSession } from "next-auth/react";
+import { formatPrice } from "@/lib/pricing";
 
-interface ShopProduct {
+export interface ShopProduct {
   id: string;
   slug: string;
   name: string;
-  tagline: string;
+  tagline: string | null;
   description: string;
   image: string;
   price: number;
@@ -26,15 +27,21 @@ interface ShopProduct {
   hairType: string[];
 }
 
-export default function ProductPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+/**
+ * Interactive part of the product page. The product data is loaded on the
+ * server (app/shop/[slug]/page.tsx) so it is in the initial HTML for search
+ * engines and link previews.
+ */
+export function ProductDetail({
+  product,
+  relatedProducts,
+}: {
+  product: ShopProduct;
+  relatedProducts: ShopProduct[];
+}) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { items: cartItems, addItem, updateQuantity, removeItem } = useCart();
-  const [product, setProduct] = useState<ShopProduct | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<ShopProduct[]>([]);
-  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [inWishlist, setInWishlist] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
@@ -48,33 +55,6 @@ export default function ProductPage() {
       setQuantity(currentCartItem.quantity);
     }
   }, [currentCartItem, product]);
-
-  useEffect(() => {
-    const loadProduct = async () => {
-      try {
-        const res = await fetch(`/api/products?slug=${slug}`);
-        if (!res.ok) {
-          setProduct(null);
-          return;
-        }
-        const data = await res.json();
-        setProduct(data.product);
-
-        const allRes = await fetch("/api/products");
-        if (allRes.ok) {
-          const allData = await allRes.json();
-          setRelatedProducts(
-            (allData.products || []).filter((p: any) => p.slug !== slug).slice(0, 4)
-          );
-        }
-      } catch {
-        setProduct(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (slug) loadProduct();
-  }, [slug]);
 
   useEffect(() => {
     if (!session?.user?.id || !product) return;
@@ -132,22 +112,10 @@ export default function ProductPage() {
         image: product.image,
         price: product.price,
         quantity,
-        tagline: product.tagline,
+        tagline: product.tagline ?? "",
       });
     }
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#533a00] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!product) {
-    return notFound();
-  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -209,7 +177,7 @@ export default function ProductPage() {
                 {/* Price */}
                 <div className="mt-6 pb-6 border-b border-[#e8dfd3]">
                   <span className="text-3xl font-header font-bold text-[#533a00]">
-                    ${product.price.toFixed(2)}
+                    {formatPrice(product.price)}
                   </span>
                   {product.size && (
                     <span className="text-sm text-[#8a7a6a] font-body ml-2">{product.size}</span>
@@ -372,7 +340,7 @@ export default function ProductPage() {
                       {related.name}
                     </h3>
                     <p className="text-[#6a5a4a] text-xs md:text-sm font-body mt-1">{related.tagline}</p>
-                    <p className="text-[#533a00] font-semibold mt-2 text-sm md:text-base">${related.price.toFixed(2)}</p>
+                    <p className="text-[#533a00] font-semibold mt-2 text-sm md:text-base">{formatPrice(related.price)}</p>
                   </a>
                 </Reveal>
               ))}

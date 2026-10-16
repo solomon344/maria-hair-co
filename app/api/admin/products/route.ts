@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slug";
 
 export async function GET() {
   try {
@@ -54,7 +56,7 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const {
-      slug,
+      slug: rawSlug,
       name,
       tagline,
       description,
@@ -69,6 +71,9 @@ export async function POST(request: Request) {
       hairType,
       stockQty,
     } = body;
+
+    // Always store a clean URL slug; fall back to the product name.
+    const slug = slugify(rawSlug || name || "");
 
     if (!slug || !name || !description || !image || price === undefined) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -98,8 +103,12 @@ export async function POST(request: Request) {
       },
     });
 
+    revalidatePath("/sitemap.xml");
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
+    if ((error as { code?: string })?.code === "P2002") {
+      return NextResponse.json({ error: "That URL slug is already in use — choose another." }, { status: 409 });
+    }
     console.error("Create product error:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
@@ -114,6 +123,12 @@ export async function PUT(request: Request) {
 
     const body = await request.json();
     const { id, ...updateData } = body;
+    if ("slug" in updateData) {
+      updateData.slug = slugify(updateData.slug || updateData.name || "");
+      if (!updateData.slug) {
+        return NextResponse.json({ error: "A valid slug is required" }, { status: 400 });
+      }
+    }
 
     if (!id) {
       return NextResponse.json({ error: "Product ID is required" }, { status: 400 });
@@ -132,8 +147,13 @@ export async function PUT(request: Request) {
       },
     });
 
+    revalidatePath(`/shop/${product.slug}`);
+    revalidatePath("/sitemap.xml");
     return NextResponse.json({ product });
   } catch (error) {
+    if ((error as { code?: string })?.code === "P2002") {
+      return NextResponse.json({ error: "That URL slug is already in use — choose another." }, { status: 409 });
+    }
     console.error("Update product error:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }

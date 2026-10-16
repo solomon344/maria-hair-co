@@ -1,8 +1,30 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import type { Metadata } from "next";
+import { formatPrice } from "@/lib/pricing";
 
 export const dynamic = "force-dynamic";
+
+// Rich link preview for WhatsApp/iMessage/etc. when the cart link is sent.
+// (Not indexed by search engines — see app/cart/layout.tsx.)
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  const shared = await prisma.sharedCart.findUnique({ where: { token } });
+  if (!shared || shared.expiresAt < new Date()) return { title: "Shared Cart" };
+
+  const items = shared.items as any[];
+  const title = `${shared.userName} shared a Mariéa wish list with you`;
+  const description = `${items.length} hand-picked hair care item${items.length === 1 ? "" : "s"} — tap to view and check out.`;
+  const image = items[0]?.image;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, ...(image ? { images: [{ url: image }] } : {}) },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 export default async function SharedCartPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -44,7 +66,7 @@ export default async function SharedCartPage({ params }: { params: Promise<{ tok
                       <p className="text-[#8a7a6a] text-xs font-body mt-0.5">{item.tagline}</p>
                       <p className="text-[#6a5a4a] text-sm font-body mt-1">Qty: {item.quantity}</p>
                     </div>
-                    <p className="font-header font-bold text-[#533a00]">${(item.price * item.quantity).toFixed(2)}</p>
+                    <p className="font-header font-bold text-[#533a00]">{formatPrice(item.price * item.quantity)}</p>
                   </div>
                 </div>
               </div>
@@ -53,7 +75,7 @@ export default async function SharedCartPage({ params }: { params: Promise<{ tok
 
           <div className="border-t border-[#e8dfd3] pt-5 flex items-center justify-between">
             <span className="font-header font-bold text-[#1a120b] text-lg">Total</span>
-            <span className="font-header font-bold text-[#533a00] text-2xl">${total.toFixed(2)}</span>
+            <span className="font-header font-bold text-[#533a00] text-2xl">{formatPrice(total)}</span>
           </div>
         </div>
 

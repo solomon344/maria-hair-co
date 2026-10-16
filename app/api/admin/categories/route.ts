@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { slugify } from "@/lib/slug";
 
 export async function GET() {
   try {
@@ -30,7 +31,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { name, slug, description, image } = await request.json();
+    const { name, slug: rawSlug, description, image } = await request.json();
+    const slug = slugify(rawSlug || name || "");
 
     if (!name || !slug) {
       return NextResponse.json({ error: "Name and slug are required" }, { status: 400 });
@@ -42,6 +44,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ category }, { status: 201 });
   } catch (error) {
+    if ((error as { code?: string })?.code === "P2002") {
+      return NextResponse.json({ error: "That URL slug is already in use — choose another." }, { status: 409 });
+    }
     console.error("Create category error:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }
@@ -54,7 +59,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, name, slug, description, image } = await request.json();
+    const { id, name, slug: rawSlug, description, image } = await request.json();
+    const slug = rawSlug === undefined ? undefined : slugify(rawSlug || name || "");
 
     if (!id) {
       return NextResponse.json({ error: "Category ID is required" }, { status: 400 });
@@ -67,6 +73,9 @@ export async function PUT(request: Request) {
 
     return NextResponse.json({ category });
   } catch (error) {
+    if ((error as { code?: string })?.code === "P2002") {
+      return NextResponse.json({ error: "That URL slug is already in use — choose another." }, { status: 409 });
+    }
     console.error("Update category error:", error);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
   }

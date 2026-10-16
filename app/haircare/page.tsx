@@ -1,6 +1,15 @@
 import { blogPosts } from "@/lib/blog-data";
 import NextLink from "next/link";
 import { Calendar, Clock, ArrowRight } from "lucide-react";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Hair Care Guides & Tips",
+  description:
+    "Expert hair care advice from the Mariéa team — routines for 4C and curly hair, natural oils, scalp health and more.",
+  alternates: { canonical: "/haircare" },
+  openGraph: { url: "/haircare", title: "Hair Care Guides & Tips" },
+};
 
 export default function HairCarePage() {
   const categories = Array.from(new Set(blogPosts.map((p) => p.category)));

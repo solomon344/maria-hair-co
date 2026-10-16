@@ -28,25 +28,25 @@ const bestsellers = [
     name: "Hydrating Shampoo",
     tagline: "Weightless moisture for parched strands",
     image: "/shampoo.jpeg",
-    price: "$34.00"
+    price: "D34.00"
   },
   {
     name: "Repair Mask",
     tagline: "Deep recovery for damaged hair",
     image: "/repair-mask.jpeg",
-    price: "$42.00"
+    price: "D42.00"
   },
   {
     name: "Nourishing Oil",
     tagline: "Daily shine and split-end seal",
     image: "/nourishing.jpeg",
-    price: "$28.00"
+    price: "D28.00"
   },
   {
     name: "Hydrating Conditioner",
     tagline: "Detangles and seals with botanicals",
     image: "/hydrating.jpeg",
-    price: "$36.00"
+    price: "D36.00"
   }
 ];
 
@@ -71,7 +71,7 @@ const testimonials = [
   }
 ];
 
-export default function Home() {
+export function HomeContent() {
   return (
     <div className="flex flex-col min-h-screen">
 
@@ -86,10 +86,10 @@ export default function Home() {
         <div className="w-full h-full bg-black/50 flex items-center px-6 pt-20 relative z-10">
           <div className="flex flex-col gap-6 max-w-2xl">
             <Reveal direction="up">
-              <div className="text-[3.5rem] md:text-[4rem] font-header text-white leading-tight">
+              <h1 className="text-[3.5rem] md:text-[4rem] font-header text-white leading-tight">
                 <span>Naturally Rooted.</span>
                 <span className="block">Engineered for Brilliance.</span>
-              </div>
+              </h1>
             </Reveal>
 
             <Reveal direction="up" delay={0.2}>
@@ -123,7 +123,7 @@ export default function Home() {
         <Reveal direction="up">
           <div className="flex flex-col gap-3 mb-10">
             <p className="text-sm uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold">The Essentials</p>
-            <p className="text-3xl md:text-4xl font-header text-[#1a120b]">Shop by Category</p>
+            <h2 className="text-3xl md:text-4xl font-header text-[#1a120b]">Shop by Category</h2>
           </div>
         </Reveal>
 
@@ -170,7 +170,7 @@ export default function Home() {
           <Reveal direction="up">
             <div className="text-center mb-14">
               <p className="text-sm uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold mb-3">Why Mariéa</p>
-              <p className="text-3xl md:text-4xl font-header text-[#1a120b]">Rooted in Nature. Proven by Science.</p>
+              <h2 className="text-3xl md:text-4xl font-header text-[#1a120b]">Rooted in Nature. Proven by Science.</h2>
             </div>
           </Reveal>
 
@@ -200,7 +200,7 @@ export default function Home() {
         <Reveal direction="up">
           <div className="flex flex-col gap-3 mb-12">
             <p className="text-sm uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold">The Collection</p>
-            <p className="text-3xl md:text-4xl font-header text-[#1a120b]">Bestsellers</p>
+            <h2 className="text-3xl md:text-4xl font-header text-[#1a120b]">Bestsellers</h2>
           </div>
         </Reveal>
 
@@ -246,7 +246,7 @@ export default function Home() {
           <Reveal direction="up">
             <div className="text-center mb-14">
               <p className="text-sm uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold mb-3">Real Talk</p>
-              <p className="text-3xl md:text-4xl font-header text-[#1a120b]">Loved by Thousands</p>
+              <h2 className="text-3xl md:text-4xl font-header text-[#1a120b]">Loved by Thousands</h2>
             </div>
           </Reveal>
 

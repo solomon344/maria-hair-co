@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { slugify } from "@/lib/slug";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { ShoppingBag, Users, Mail, Printer, ArrowLeft, Send, Box, Plus, Trash2, Check, ChevronDown, Upload, X, Tags, PlusCircle } from "lucide-react";
@@ -292,7 +293,8 @@ export default function AdminPage() {
         setImagePreview("");
         loadProducts();
       } else {
-        alert("Failed to save product");
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Failed to save product");
       }
     } catch {
       alert("Something went wrong");
@@ -485,7 +487,7 @@ We hope this email finds you well!
 We're excited to share some updates with you:
 - New product launches coming soon
 - Exclusive discounts for our loyal customers
-- Free shipping on orders over $50
+- Free shipping on orders over D50
 
 Thank you for being part of the Mariéa family!
 
@@ -582,7 +584,7 @@ The Mariéa Hair Co. Team`,
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-[#6a5a4a] font-body">{order.items?.length || 0} items</span>
-                      <span className="font-header font-bold text-[#533a00]">${Number(order.total).toFixed(2)}</span>
+                      <span className="font-header font-bold text-[#533a00]">D{Number(order.total).toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
@@ -678,18 +680,30 @@ The Mariéa Hair Co. Team`,
                         <input
                           type="text"
                           value={editingProduct?.name || ""}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value } as ProductForm)}
+                          onChange={(e) => {
+                            const name = e.target.value;
+                            // New products: keep the slug in sync with the name until it's edited by hand.
+                            const autoSlug =
+                              !editingProduct?.id &&
+                              (!editingProduct?.slug || editingProduct.slug === slugify(editingProduct?.name || ""));
+                            setEditingProduct({
+                              ...editingProduct,
+                              name,
+                              ...(autoSlug ? { slug: slugify(name) } : {}),
+                            } as ProductForm);
+                          }}
                           required
                           className="w-full border border-[#e8dfd3] px-4 py-3 font-body text-sm text-[#1a120b] focus:outline-none focus:border-[#533a00]"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-body text-[#6a5a4a] mb-1.5">Slug *</label>
+                        <label className="block text-sm font-body text-[#6a5a4a] mb-1.5">URL slug</label>
                         <input
                           type="text"
                           value={editingProduct?.slug || ""}
                           onChange={(e) => setEditingProduct({ ...editingProduct, slug: e.target.value } as ProductForm)}
-                          required
+                          onBlur={(e) => setEditingProduct({ ...editingProduct, slug: slugify(e.target.value) } as ProductForm)}
+                          placeholder="generated from the name"
                           className="w-full border border-[#e8dfd3] px-4 py-3 font-body text-sm text-[#1a120b] focus:outline-none focus:border-[#533a00]"
                         />
                       </div>
@@ -970,7 +984,7 @@ The Mariéa Hair Co. Team`,
                         </div>
                         <div className="flex items-center justify-between pt-3 border-t border-[#e8dfd3]">
                           <span className="font-header font-bold text-[#533a00] text-xl">
-                            {editingProduct?.price ? `$${parseFloat(editingProduct.price).toFixed(2)}` : "$0.00"}
+                            {editingProduct?.price ? `D${parseFloat(editingProduct.price).toFixed(2)}` : "D0.00"}
                           </span>
                           {editingProduct?.badge && (
                             <span className="px-2 py-1 bg-[#533a00] text-white text-[10px] uppercase tracking-wider font-semibold">
@@ -1029,7 +1043,7 @@ The Mariéa Hair Co. Team`,
                             <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">
                               {product.category?.name || "N/A"}
                             </td>
-                            <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">${Number(product.price).toFixed(2)}</td>
+                            <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">D{Number(product.price).toFixed(2)}</td>
                             <td className="px-6 py-4 text-sm font-body text-[#6a5a4a]">{product.stockQty}</td>
                             <td className="px-6 py-4 text-sm font-body">
                               <div className="flex items-center gap-3">
