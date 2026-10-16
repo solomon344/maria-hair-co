@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import { useRouter } from "next/navigation";
@@ -26,7 +26,7 @@ interface DeliveryInfo {
 
 const MODEMPAY_PUBLIC_KEY = process.env.NEXT_PUBLIC_MODEMPAY_PUBLIC_KEY || "";
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const sharedToken = searchParams.get("shared");
@@ -505,5 +505,20 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// useSearchParams() needs a Suspense boundary or `next build` fails to prerender this page.
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#533a00]"></div>
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }
