@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 import { verifyTransaction } from "@/lib/modempay";
-import { prisma } from "@/lib/prisma";
+import { markOrderPaid, type ModemPayRecord } from "@/lib/orders";
 
 /**
  * Confirms an inline (client-side ModemPayCheckout) payment.
  *
  * The browser `callback` receives a `transaction` object whose `id` (or
- * `payment_intent_id`) we send here. We verify it against the ModemPay API and,
- * if successful, mark the pending order as PAID.
+ * `payment_intent_id`) we send here. We fetch it from the ModemPay API and only
+ * mark the order PAID if the amount, currency and status check out.
  */
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { orderId, transactionId } = body;
+    const { orderId, transactionId } = await request.json();
 
     if (!orderId || !transactionId) {
       return NextResponse.json(
@@ -22,30 +21,16 @@ export async function POST(request: Request) {
     }
 
     const result = await verifyTransaction(transactionId);
-    const record = result.data as unknown as {
-      id: string;
-      status: string;
-      payment_intent_id?: string;
-    };
+    const record = result.data as unknown as ModemPayRecord;
 
-    const isPaid =
-      record.status === "succeeded" ||
-      record.status === "completed" ||
-      record.status === "paid" ||
-      record.status === "successful";
-
-    if (!isPaid) {
+    const outcome = await markOrderPaid(orderId, record);
+    if (!outcome.ok) {
+      console.warn(`Payment confirm rejected for order ${orderId}: ${outcome.reason}`);
       return NextResponse.json(
-        { success: false, status: record.status },
+        { success: false, status: record.status, error: outcome.reason },
         { status: 402 }
       );
     }
-
-    const ref = record.payment_intent_id || record.id;
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { status: "PAID", paymentRef: ref },
-    });
 
     return NextResponse.json({ success: true, status: record.status });
   } catch (error) {

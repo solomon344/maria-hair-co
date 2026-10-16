@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Shield, Truck } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { calculateTotals } from "@/lib/pricing";
 
 declare global {
   interface Window {
@@ -29,7 +29,6 @@ const MODEMPAY_PUBLIC_KEY = process.env.NEXT_PUBLIC_MODEMPAY_PUBLIC_KEY || "";
 export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
   const sharedToken = searchParams.get("shared");
   const { items, subtotal, clearCart, loadCart, setSharedCart } = useCart();
   const [step, setStep] = useState<"info" | "shipping" | "payment">("info");
@@ -80,9 +79,7 @@ export default function CheckoutPage() {
     loadShared();
   }, [sharedToken, items.length]);
 
-  const shipping = subtotal >= 50 ? 0 : 5.99;
-  const tax = subtotal * 0.08;
-  const total = subtotal + shipping + tax;
+  const { shipping, tax, total } = calculateTotals(subtotal);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -98,7 +95,6 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: total,
           items: items.map(item => ({
             productId: item.id,
             name: item.name,
@@ -107,7 +103,7 @@ export default function CheckoutPage() {
             image: item.image,
           })),
           customerInfo: deliveryInfo,
-          userId: session?.user?.id,
+          sharedToken: sharedToken || undefined,
         }),
       });
       const orderData = await orderRes.json();
@@ -123,7 +119,8 @@ export default function CheckoutPage() {
       }
 
       window.ModemPayCheckout({
-        amount: Math.round(total * 100),
+        // Server-calculated total, in dalasi (ModemPay amounts are not in minor units).
+        amount: orderData.amount,
         currency: "GMD",
         public_key: MODEMPAY_PUBLIC_KEY,
         payment_methods: "wallet,card,bank",
@@ -146,7 +143,7 @@ export default function CheckoutPage() {
             const confirmData = await confirmRes.json();
             if (confirmData.success) {
               clearCart();
-              router.push(`/payment/return?intentId=${orderData.orderId}`);
+              router.push(`/payment/return?orderId=${orderData.orderId}`);
             } else {
               setPaymentError("Payment was not completed. Please try again.");
             }

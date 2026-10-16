@@ -4,16 +4,18 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(
   request: Request,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
     const session = await auth();
-    if (!session?.user?.id || session.user.email !== process.env.ADMIN_EMAIL) {
+    if (!session?.user?.id || session.user.email !== process.env.NEXT_PUBLIC_ADMIN_EMAIL) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { orderId } = await params;
+
     const order = await prisma.order.findUnique({
-      where: { id: params.orderId },
+      where: { id: orderId },
       include: {
         user: {
           select: { name: true, email: true },

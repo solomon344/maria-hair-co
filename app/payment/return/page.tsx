@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useCart } from "@/context/cart-context";
-import { prisma } from "@/lib/prisma";
 import { useSession } from "next-auth/react";
 
 function PaymentReturnContent() {
@@ -16,18 +15,22 @@ function PaymentReturnContent() {
 
   useEffect(() => {
     const verifyPayment = async () => {
+      const orderId = searchParams.get("orderId");
       const reference =
         searchParams.get("transaction_id") ||
         searchParams.get("reference") ||
         searchParams.get("intentId");
 
-      if (!reference) {
+      if (!orderId && !reference) {
         setStatus("failed");
         return;
       }
 
       try {
-        const res = await fetch(`/api/payment/verify?transactionId=${reference}`);
+        const query = orderId
+          ? `orderId=${encodeURIComponent(orderId)}`
+          : `transactionId=${encodeURIComponent(reference!)}`;
+        const res = await fetch(`/api/payment/verify?${query}`);
         const data = await res.json();
 
         if (res.ok && data.success) {

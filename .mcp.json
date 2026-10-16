@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "modempay-docs": {
+      "type": "http",
+      "url": "https://docs.modempay.com/mcp"
+    }
+  }
+}
