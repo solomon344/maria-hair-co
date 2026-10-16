@@ -105,7 +105,7 @@ function ShopContent() {
         <div className="max-w-7xl mx-auto px-6 md:px-8 py-10">
           <p className="text-sm uppercase tracking-[0.2em] text-[#533a00] font-body font-semibold mb-2">The Collection</p>
           <h1 className="text-3xl md:text-4xl font-header text-[#1a120b]">Shop All Products</h1>
-          <p className="text-[#6a5a4a] font-body mt-2">{loading ? "Loading..." : `D{filtered.length} products`}</p>
+          <p className="text-[#6a5a4a] font-body mt-2">{loading ? "Loading..." : `D${filtered.length} products`}</p>
         </div>
       </div>
 
@@ -170,13 +170,13 @@ function ShopContent() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`p-1.5 D{viewMode === "grid" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
+                className={`p-1.5 D${viewMode === "grid" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
               >
                 <Grid3X3 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode("list")}
-                className={`p-1.5 D{viewMode === "list" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
+                className={`p-1.5 D${viewMode === "list" ? "text-[#533a00]" : "text-[#c4b5a0]"}`}
               >
                 <List className="w-4 h-4" />
               </button>
